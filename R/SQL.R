@@ -248,19 +248,19 @@ lookAhead = function(select, where, fields, view_spec) {
 }
 
 join = function(select, type, on, q1, q2, a1, a2, where=NULL) {
-
+    
     for (s in intersect(on, select)) {
         newsel = switch(type,
-            full=paste('case', tf(a1, s), 'when null then', tf(a2, s),
-                       'else', tf(a1, s),  'end AS', s),
-            right=tf(a2, s),
-            tf(a1, s))
+                        full=paste('case', tf(a1, s), 'when null then', tf(a2, s),
+                                   'else', tf(a1, s),  'end AS', s),
+                        right=tf(a2, s),
+                        tf(a1, s))
         
         select[match(s, select)] = newsel
     }
-    
+    oldon = on
     on = paste(tf(a1, on), '=', tf(a2, on))
-
+    
     q = c(
         'SELECT',
         indentWith(select, ','),
@@ -276,11 +276,26 @@ join = function(select, type, on, q1, q2, a1, a2, where=NULL) {
             indentWith(on, ' AND')
         ), '')
     )
-
+    
     if (length(where)) {
+        newwhere = lapply(where, function(x) {
+            oldclass <- class(x)
+            x <- lapply(x, function(y) {
+                allnames = intersect(names(y), oldon)
+                if(length(allnames)) {
+                    for(i in seq_along(allnames)) {
+                        tmpname <- allnames[i]
+                        names(y)[match(tmpname, names(y))] <- tf(a1, tmpname)
+                    }
+                }
+                y
+            })
+            class(x) <- oldclass
+            x
+        })
         q = c(q,
               'WHERE',
-              indentWith(getWheres(where, NULL, leaf=FALSE), '')
+              indentWith(getWheres(newwhere, NULL, leaf=FALSE), '')
         )
     }
     q
