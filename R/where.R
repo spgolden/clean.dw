@@ -139,7 +139,7 @@ getWheres = function(where, fields, leaf = TRUE) {
                 op = 'is'
                 crit = 'null'
             } else if (multi_crit) {
-                crit = if (op == 'between') {
+                crit = if (tolower(op) == 'between') {
                         paste(crit, collapse=' and ')
                     } else {
                         if (op == 'like')
